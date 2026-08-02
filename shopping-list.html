@@ -37,7 +37,7 @@
   .empty-state { text-align: center; color: #3A3242; padding: 60px 20px; display: flex; flex-direction: column; align-items: center; }
   .loading-state { text-align: center; color: #8A7F99; padding: 80px 20px; font-size: 13px; }
   .cat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-  .cat-card { background: #fff; border: 1px solid #EDE6D8; border-radius: 12px; padding: 12px; }
+  .cat-card { background: #fff; border: 1px solid #EDE6D8; border-radius: 12px; padding: 12px; cursor: pointer; }
   .cat-head { display: flex; align-items: center; gap: 6px; margin-bottom: 8px; font-size: 13px; font-weight: 700; }
   .cat-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
   .item-row { display: flex; align-items: center; gap: 8px; padding: 5px 0; }
@@ -312,7 +312,7 @@ function renderList() {
   state.categories.forEach(function (cat) {
     var items = state.items.filter(function (it) { return it.category === cat.id; });
     if (items.length === 0) return;
-    html += '<div class="cat-card">' +
+    html += '<div class="cat-card" data-action="quick-add" data-cat="' + cat.id + '">' +
       '<div class="cat-head"><span class="cat-dot" style="background:' + cat.color + ';"></span>' + escapeHtml(cat.name) + '</div>';
     items.forEach(function (it) { html += renderItemRow(it); });
     html += '</div>';
@@ -409,10 +409,19 @@ function attachEvents() {
   }
 
   app.querySelectorAll('[data-action="toggle"]').forEach(function (btn) {
-    btn.addEventListener("click", function () { toggleItem(btn.getAttribute("data-id")); });
+    btn.addEventListener("click", function (e) { e.stopPropagation(); toggleItem(btn.getAttribute("data-id")); });
   });
   app.querySelectorAll('[data-action="delete"]').forEach(function (btn) {
-    btn.addEventListener("click", function () { deleteItem(btn.getAttribute("data-id")); });
+    btn.addEventListener("click", function (e) { e.stopPropagation(); deleteItem(btn.getAttribute("data-id")); });
+  });
+  app.querySelectorAll('[data-action="quick-add"]').forEach(function (card) {
+    card.addEventListener("click", function () {
+      state.formCategory = card.getAttribute("data-cat");
+      state.showForm = true;
+      render();
+      var input = document.getElementById("item-input");
+      if (input) input.focus();
+    });
   });
   var clearBtn = app.querySelector('[data-action="clear-done"]');
   if (clearBtn) clearBtn.addEventListener("click", clearDone);
