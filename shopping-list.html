@@ -71,6 +71,7 @@
   .cat-editor { display: flex; flex-direction: column; gap: 8px; }
   .item-manage-row { display: flex; align-items: center; gap: 6px; background: #fff; border: 1px solid #EDE6D8; border-radius: 10px; padding: 10px 10px; }
   .item-manage-text { flex: 1; font-size: 14px; word-break: break-word; }
+  .item-manage-text-input { flex: 1; font-size: 14px; border: none; border-bottom: 1.5px solid var(--purple); outline: none; padding: 2px 0; color: #3A3242; font-family: inherit; background: transparent; }
   .item-manage-row.done .item-manage-text { color: #C4BCCB; text-decoration: line-through; }
   .item-manage-move { display: flex; flex-direction: column; gap: 1px; }
   .item-manage-move button { background: none; border: none; padding: 0; font-size: 10px; line-height: 1; color: #B0A8BC; cursor: pointer; }
@@ -159,6 +160,7 @@ var state = {
   showForm: false,
   editingCats: false,
   managingCategoryId: null,
+  managerInlineEditId: null,
   editingItemId: null,
   formCategory: null,
   error: null,
@@ -394,13 +396,20 @@ function renderCategoryManager() {
   state.items.forEach(function (it, i) { if (it.category === cat.id) items.push({ it: it, absIdx: i }); });
   var rows = items.map(function (entry, posInCat) {
     var it = entry.it;
+    var isEditing = state.managerInlineEditId === it.id;
+    var textOrInput = isEditing
+      ? '<input class="item-manage-text-input" id="manage-inline-input" value="' + escapeHtml(it.text) + '" data-id="' + it.id + '" />'
+      : '<div class="item-manage-text">' + escapeHtml(it.text) + '</div>';
+    var pencilOrCheck = isEditing
+      ? '<button type="button" class="item-manage-icon" data-action="manage-inline-save" data-id="' + it.id + '">✓</button>'
+      : '<button type="button" class="item-manage-icon" data-action="manage-pencil" data-id="' + it.id + '">✏️</button>';
     return '<div class="item-manage-row' + (it.done ? " done" : "") + '">' +
       '<div class="item-manage-move">' +
         '<button type="button" data-action="manage-move-up" data-id="' + it.id + '"' + (posInCat === 0 ? " disabled" : "") + '>▲</button>' +
         '<button type="button" data-action="manage-move-down" data-id="' + it.id + '"' + (posInCat === items.length - 1 ? " disabled" : "") + '>▼</button>' +
       '</div>' +
-      '<div class="item-manage-text">' + escapeHtml(it.text) + '</div>' +
-      '<button type="button" class="item-manage-icon" data-action="manage-pencil" data-id="' + it.id + '">✏️</button>' +
+      textOrInput +
+      pencilOrCheck +
       '<button type="button" class="item-manage-icon" data-action="manage-delete" data-id="' + it.id + '">🗑</button>' +
     '</div>';
   }).join("");
@@ -676,11 +685,32 @@ function attachEvents() {
   });
   app.querySelectorAll('[data-action="manage-pencil"]').forEach(function (btn) {
     btn.addEventListener("click", function () {
-      state.editingItemId = btn.getAttribute("data-id");
+      state.managerInlineEditId = btn.getAttribute("data-id");
       render();
-      syncModalToViewport();
+      var input = document.getElementById("manage-inline-input");
+      if (input) { input.focus(); input.select(); }
     });
   });
+  function saveInlineEdit() {
+    var input = document.getElementById("manage-inline-input");
+    if (!input) return;
+    var id = input.getAttribute("data-id");
+    var text = input.value.trim();
+    var item = state.items.find(function (x) { return x.id === id; });
+    if (item && text) item.text = text;
+    state.managerInlineEditId = null;
+    render();
+    persistItems().then(function (ok) { if (ok) flashSaved(); });
+  }
+  app.querySelectorAll('[data-action="manage-inline-save"]').forEach(function (btn) {
+    btn.addEventListener("click", saveInlineEdit);
+  });
+  var inlineInput = document.getElementById("manage-inline-input");
+  if (inlineInput) {
+    inlineInput.addEventListener("keydown", function (e) {
+      if (e.key === "Enter") { e.preventDefault(); saveInlineEdit(); }
+    });
+  }
   app.querySelectorAll('[data-action="manage-delete"]').forEach(function (btn) {
     btn.addEventListener("click", function () { deleteItem(btn.getAttribute("data-id")); });
   });
