@@ -40,7 +40,11 @@
   .cat-card { background: #fff; border: 1px solid #EDE6D8; border-radius: 12px; padding: 12px; cursor: pointer; }
   .cat-head { display: flex; align-items: center; gap: 6px; margin-bottom: 8px; font-size: 13px; font-weight: 700; }
   .cat-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
-  .item-row { display: flex; align-items: center; gap: 8px; padding: 5px 0; }
+  .item-row { display: flex; align-items: center; gap: 8px; padding: 5px 0; cursor: pointer; }
+  .item-move-row { display: flex; gap: 10px; justify-content: center; margin-top: 4px; }
+  .item-move-btn { flex: 1; padding: 10px 0; border-radius: 8px; border: 1px solid #E4DCEF; background: #F8F5FC; color: var(--purple-dark); font-size: 13px; font-weight: 700; cursor: pointer; font-family: inherit; }
+  .item-move-btn:disabled { opacity: 0.35; }
+  .delete-item-btn { margin-top: 10px; background: none; border: none; color: #C05656; font-size: 12.5px; text-decoration: underline; cursor: pointer; font-family: inherit; padding: 6px; display: block; margin-left: auto; margin-right: auto; }
   .item-check { width: 20px; height: 20px; border-radius: 50%; border: 2px solid; background: #fff; flex-shrink: 0; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 11px; color: #fff; }
   .item-check.checked { color: #fff; }
   .item-text { flex: 1; font-size: 13.5px; word-break: break-word; }
@@ -144,6 +148,7 @@ var state = {
   loaded: false,
   showForm: false,
   editingCats: false,
+  editingItemId: null,
   formCategory: null,
   error: null,
   saving: false,
@@ -230,6 +235,32 @@ async function clearDone() {
   render();
   await persistItems();
 }
+async function moveItemInCategory(id, delta) {
+  var item = state.items.find(function (x) { return x.id === id; });
+  if (!item) return;
+  var indices = [];
+  state.items.forEach(function (x, i) { if (x.category === item.category) indices.push(i); });
+  var absIdx = state.items.indexOf(item);
+  var posInCat = indices.indexOf(absIdx);
+  var newPos = posInCat + delta;
+  if (newPos < 0 || newPos >= indices.length) return;
+  var otherIdx = indices[newPos];
+  var tmp = state.items[absIdx];
+  state.items[absIdx] = state.items[otherIdx];
+  state.items[otherIdx] = tmp;
+  render();
+  await persistItems();
+}
+async function updateItem(id, text, categoryId) {
+  var item = state.items.find(function (x) { return x.id === id; });
+  if (!item) return;
+  item.text = text;
+  item.category = categoryId;
+  state.editingItemId = null;
+  render();
+  var ok = await persistItems();
+  if (ok) flashSaved();
+}
 
 function exportData() {
   var payload = { exportedAt: new Date().toISOString(), items: state.items };
@@ -286,7 +317,7 @@ function renderHeader() {
 function renderItemRow(it) {
   var cat = catById(it.category);
   return (
-    '<div class="item-row' + (it.done ? " done" : "") + '">' +
+    '<div class="item-row' + (it.done ? " done" : "") + '" data-action="edit-item" data-id="' + it.id + '">' +
       '<button class="item-check' + (it.done ? " checked" : "") + '" style="border-color:' + cat.color + ';' + (it.done ? "background:" + cat.color + ";" : "") + '" data-action="toggle" data-id="' + it.id + '">' + (it.done ? "✓" : "") + '</button>' +
       '<div class="item-text">' + escapeHtml(it.text) + '</div>' +
       '<button class="item-delete" data-action="delete" data-id="' + it.id + '" aria-label="削除">🗑</button>' +
@@ -345,6 +376,40 @@ function renderCategoryEditor() {
   return html;
 }
 
+function renderEditItemModal() {
+  if (!state.editingItemId) return "";
+  var item = state.items.find(function (x) { return x.id === state.editingItemId; });
+  if (!item) return "";
+  var indices = [];
+  state.items.forEach(function (x, i) { if (x.category === item.category) indices.push(i); });
+  var absIdx = state.items.indexOf(item);
+  var posInCat = indices.indexOf(absIdx);
+  var chips = state.categories.map(function (c) {
+    var active = item.category === c.id;
+    return '<button type="button" class="cat-chip' + (active ? " active" : "") + '" style="border-color:' + c.color + ';' + (active ? "background:" + c.color + ";" : "color:" + c.color + ";") + '" data-action="edit-pick-cat" data-cat="' + c.id + '">' + escapeHtml(c.name) + '</button>';
+  }).join("");
+  return (
+    '<div class="modal-overlay" data-action="close-edit-modal">' +
+      '<form class="modal" id="edit-form" data-stop="1">' +
+        '<div class="modal-header">' +
+          '<div class="modal-title">編集する</div>' +
+          '<button type="button" class="close-btn" data-action="close-edit-modal">✕</button>' +
+        '</div>' +
+        '<label class="field-label">カテゴリ</label>' +
+        '<div class="cat-chip-row">' + chips + '</div>' +
+        '<label class="field-label">買うもの</label>' +
+        '<input class="field-input" id="edit-item-input" value="' + escapeHtml(item.text) + '" autocomplete="off" />' +
+        '<div class="item-move-row">' +
+          '<button type="button" class="item-move-btn" data-action="edit-move-up"' + (posInCat === 0 ? " disabled" : "") + '>▲ 上へ</button>' +
+          '<button type="button" class="item-move-btn" data-action="edit-move-down"' + (posInCat === indices.length - 1 ? " disabled" : "") + '>▼ 下へ</button>' +
+        '</div>' +
+        '<button type="submit" class="submit-btn">保存する</button>' +
+        '<button type="button" class="delete-item-btn" data-action="edit-delete-item">この項目を削除</button>' +
+      '</form>' +
+    '</div>'
+  );
+}
+
 function renderModal() {
   if (!state.showForm) return "";
   var chips = state.categories.map(function (c) {
@@ -384,7 +449,8 @@ function renderApp() {
     savedHtml +
     renderList() +
     '<button class="fab" data-action="open-form" aria-label="買うものを追加">+</button>' +
-    renderModal()
+    renderModal() +
+    renderEditItemModal()
   );
 }
 
@@ -422,6 +488,13 @@ function attachEvents() {
       syncModalToViewport();
       var input = document.getElementById("item-input");
       if (input) input.focus();
+    });
+  });
+  app.querySelectorAll('[data-action="edit-item"]').forEach(function (row) {
+    row.addEventListener("click", function () {
+      state.editingItemId = row.getAttribute("data-id");
+      render();
+      syncModalToViewport();
     });
   });
   var clearBtn = app.querySelector('[data-action="clear-done"]');
@@ -506,6 +579,45 @@ function attachEvents() {
       if (!text) return;
       addItem(state.formCategory, text);
       state.showForm = false;
+    });
+  }
+
+  app.querySelectorAll('[data-action="close-edit-modal"]').forEach(function (el) {
+    el.addEventListener("click", function (e) {
+      if (e.target.getAttribute("data-action") === "close-edit-modal") {
+        state.editingItemId = null;
+        render();
+      }
+    });
+  });
+  app.querySelectorAll('[data-action="edit-pick-cat"]').forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      var item = state.items.find(function (x) { return x.id === state.editingItemId; });
+      if (item) item.category = btn.getAttribute("data-cat");
+      render();
+    });
+  });
+  var editMoveUpBtn = app.querySelector('[data-action="edit-move-up"]');
+  if (editMoveUpBtn) editMoveUpBtn.addEventListener("click", function () { moveItemInCategory(state.editingItemId, -1); });
+  var editMoveDownBtn = app.querySelector('[data-action="edit-move-down"]');
+  if (editMoveDownBtn) editMoveDownBtn.addEventListener("click", function () { moveItemInCategory(state.editingItemId, 1); });
+  var editDeleteBtn = app.querySelector('[data-action="edit-delete-item"]');
+  if (editDeleteBtn) {
+    editDeleteBtn.addEventListener("click", function () {
+      var id = state.editingItemId;
+      state.editingItemId = null;
+      deleteItem(id);
+    });
+  }
+  var editForm = document.getElementById("edit-form");
+  if (editForm) {
+    editForm.addEventListener("submit", function (e) {
+      e.preventDefault();
+      var item = state.items.find(function (x) { return x.id === state.editingItemId; });
+      var input = document.getElementById("edit-item-input");
+      var text = input.value.trim();
+      if (!text || !item) return;
+      updateItem(item.id, text, item.category);
     });
   }
 }
