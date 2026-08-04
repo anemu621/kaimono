@@ -69,6 +69,16 @@
   .submit-btn:disabled { opacity: 0.6; }
   .clear-done-btn { display: block; margin: 8px auto 0; background: none; border: none; color: #8A7F99; font-size: 12px; text-decoration: underline; cursor: pointer; font-family: inherit; padding: 6px; grid-column: 1 / -1; text-align: center; }
   .cat-editor { display: flex; flex-direction: column; gap: 8px; }
+  .item-manage-row { display: flex; align-items: center; gap: 6px; background: #fff; border: 1px solid #EDE6D8; border-radius: 10px; padding: 10px 10px; }
+  .item-manage-text { flex: 1; font-size: 14px; word-break: break-word; }
+  .item-manage-row.done .item-manage-text { color: #C4BCCB; text-decoration: line-through; }
+  .item-manage-move { display: flex; flex-direction: column; gap: 1px; }
+  .item-manage-move button { background: none; border: none; padding: 0; font-size: 10px; line-height: 1; color: #B0A8BC; cursor: pointer; }
+  .item-manage-move button:disabled { opacity: 0.25; }
+  .item-manage-icon { background: none; border: none; padding: 4px; cursor: pointer; font-size: 15px; flex-shrink: 0; }
+  .manage-add-row { display: flex; gap: 8px; margin-top: 10px; }
+  .manage-add-row input { flex: 1; background: #F8F5FC; border: 1px solid #E4DCEF; border-radius: 8px; padding: 10px 12px; font-size: 14px; font-family: inherit; }
+  .manage-add-row button { background: var(--purple); color: #fff; border: none; border-radius: 8px; padding: 0 18px; font-size: 18px; font-weight: 700; font-family: inherit; }
   .cat-edit-row { display: flex; align-items: center; gap: 8px; background: #fff; border: 1px solid #EDE6D8; border-radius: 10px; padding: 8px 10px; }
   .cat-move-btns { display: flex; flex-direction: column; gap: 1px; }
   .cat-move-btn { background: none; border: none; padding: 0; font-size: 10px; line-height: 1; color: #B0A8BC; cursor: pointer; }
@@ -148,6 +158,7 @@ var state = {
   loaded: false,
   showForm: false,
   editingCats: false,
+  managingCategoryId: null,
   editingItemId: null,
   formCategory: null,
   error: null,
@@ -343,7 +354,7 @@ function renderList() {
   state.categories.forEach(function (cat) {
     var items = state.items.filter(function (it) { return it.category === cat.id; });
     if (items.length === 0) return;
-    html += '<div class="cat-card" data-action="quick-add" data-cat="' + cat.id + '">' +
+    html += '<div class="cat-card" data-action="manage-cat" data-cat="' + cat.id + '">' +
       '<div class="cat-head"><span class="cat-dot" style="background:' + cat.color + ';"></span>' + escapeHtml(cat.name) + '</div>';
     items.forEach(function (it) { html += renderItemRow(it); });
     html += '</div>';
@@ -374,6 +385,41 @@ function renderCategoryEditor() {
     '<button type="button" class="submit-btn" data-action="done-cats">✓ 完了</button>' +
   '</div>';
   return html;
+}
+
+function renderCategoryManager() {
+  if (!state.managingCategoryId) return "";
+  var cat = catById(state.managingCategoryId);
+  var items = [];
+  state.items.forEach(function (it, i) { if (it.category === cat.id) items.push({ it: it, absIdx: i }); });
+  var rows = items.map(function (entry, posInCat) {
+    var it = entry.it;
+    return '<div class="item-manage-row' + (it.done ? " done" : "") + '">' +
+      '<div class="item-manage-move">' +
+        '<button type="button" data-action="manage-move-up" data-id="' + it.id + '"' + (posInCat === 0 ? " disabled" : "") + '>▲</button>' +
+        '<button type="button" data-action="manage-move-down" data-id="' + it.id + '"' + (posInCat === items.length - 1 ? " disabled" : "") + '>▼</button>' +
+      '</div>' +
+      '<div class="item-manage-text">' + escapeHtml(it.text) + '</div>' +
+      '<button type="button" class="item-manage-icon" data-action="manage-pencil" data-id="' + it.id + '">✏️</button>' +
+      '<button type="button" class="item-manage-icon" data-action="manage-delete" data-id="' + it.id + '">🗑</button>' +
+    '</div>';
+  }).join("");
+  var emptyHtml = items.length === 0 ? '<div class="empty-state" style="padding:20px;"><div style="color:#8A7F99;font-size:13px;">このカテゴリにはまだ何もありません</div></div>' : "";
+  return (
+    '<div class="modal-overlay" data-action="close-manage-modal">' +
+      '<form class="modal" id="manage-form" data-stop="1">' +
+        '<div class="modal-header">' +
+          '<div class="modal-title"><span class="cat-dot" style="background:' + cat.color + ';display:inline-block;margin-right:6px;"></span>' + escapeHtml(cat.name) + '</div>' +
+          '<button type="button" class="close-btn" data-action="close-manage-modal">✕</button>' +
+        '</div>' +
+        rows + emptyHtml +
+        '<div class="manage-add-row">' +
+          '<input id="manage-add-input" placeholder="新しく追加する" autocomplete="off" />' +
+          '<button type="submit">＋</button>' +
+        '</div>' +
+      '</form>' +
+    '</div>'
+  );
 }
 
 function renderEditItemModal() {
@@ -450,7 +496,8 @@ function renderApp() {
     renderList() +
     '<button class="fab" data-action="open-form" aria-label="買うものを追加">+</button>' +
     renderModal() +
-    renderEditItemModal()
+    renderEditItemModal() +
+    renderCategoryManager()
   );
 }
 
@@ -480,14 +527,11 @@ function attachEvents() {
   app.querySelectorAll('[data-action="delete"]').forEach(function (btn) {
     btn.addEventListener("click", function (e) { e.stopPropagation(); deleteItem(btn.getAttribute("data-id")); });
   });
-  app.querySelectorAll('[data-action="quick-add"]').forEach(function (card) {
+  app.querySelectorAll('[data-action="manage-cat"]').forEach(function (card) {
     card.addEventListener("click", function () {
-      state.formCategory = card.getAttribute("data-cat");
-      state.showForm = true;
+      state.managingCategoryId = card.getAttribute("data-cat");
       render();
       syncModalToViewport();
-      var input = document.getElementById("item-input");
-      if (input) input.focus();
     });
   });
   app.querySelectorAll('[data-action="edit-item"]').forEach(function (row) {
@@ -619,6 +663,43 @@ function attachEvents() {
       var text = input.value.trim();
       if (!text || !item) return;
       updateItem(item.id, text, item.category);
+    });
+  }
+
+  app.querySelectorAll('[data-action="close-manage-modal"]').forEach(function (el) {
+    el.addEventListener("click", function (e) {
+      if (e.target.getAttribute("data-action") === "close-manage-modal") {
+        state.managingCategoryId = null;
+        render();
+      }
+    });
+  });
+  app.querySelectorAll('[data-action="manage-pencil"]').forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      state.editingItemId = btn.getAttribute("data-id");
+      render();
+      syncModalToViewport();
+    });
+  });
+  app.querySelectorAll('[data-action="manage-delete"]').forEach(function (btn) {
+    btn.addEventListener("click", function () { deleteItem(btn.getAttribute("data-id")); });
+  });
+  app.querySelectorAll('[data-action="manage-move-up"]').forEach(function (btn) {
+    btn.addEventListener("click", function () { moveItemInCategory(btn.getAttribute("data-id"), -1); });
+  });
+  app.querySelectorAll('[data-action="manage-move-down"]').forEach(function (btn) {
+    btn.addEventListener("click", function () { moveItemInCategory(btn.getAttribute("data-id"), 1); });
+  });
+  var manageForm = document.getElementById("manage-form");
+  if (manageForm) {
+    manageForm.addEventListener("submit", function (e) {
+      e.preventDefault();
+      var input = document.getElementById("manage-add-input");
+      var text = input.value.trim();
+      if (!text) return;
+      addItem(state.managingCategoryId, text);
+      input.value = "";
+      input.focus();
     });
   }
 }
