@@ -491,7 +491,8 @@ function attachEvents() {
     });
   });
   app.querySelectorAll('[data-action="edit-item"]').forEach(function (row) {
-    row.addEventListener("click", function () {
+    row.addEventListener("click", function (e) {
+      e.stopPropagation();
       state.editingItemId = row.getAttribute("data-id");
       render();
       syncModalToViewport();
