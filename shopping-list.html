@@ -73,9 +73,9 @@
   .item-manage-text { flex: 1; font-size: 14px; word-break: break-word; }
   .item-manage-text-input { flex: 1; font-size: 14px; border: none; border-bottom: 1.5px solid var(--purple); outline: none; padding: 2px 0; color: #3A3242; font-family: inherit; background: transparent; }
   .item-manage-row.done .item-manage-text { color: #C4BCCB; text-decoration: line-through; }
-  .item-manage-move { display: flex; flex-direction: column; gap: 1px; }
-  .item-manage-move button { background: none; border: none; padding: 0; font-size: 10px; line-height: 1; color: #B0A8BC; cursor: pointer; }
-  .item-manage-move button:disabled { opacity: 0.25; }
+  .drag-handle { font-size: 15px; color: #B0A8BC; padding: 4px 6px; touch-action: none; cursor: grab; user-select: none; flex-shrink: 0; }
+  .item-manage-row { transition: box-shadow 0.15s ease; }
+  .item-manage-row.dragging { box-shadow: 0 6px 16px rgba(58,50,66,0.25); background: #FBF9FF; z-index: 10; position: relative; }
   .item-manage-icon { background: none; border: none; padding: 4px; cursor: pointer; font-size: 15px; flex-shrink: 0; }
   .manage-add-row { display: flex; gap: 8px; margin-top: 10px; }
   .manage-add-row input { flex: 1; background: #F8F5FC; border: 1px solid #E4DCEF; border-radius: 8px; padding: 10px 12px; font-size: 14px; font-family: inherit; }
@@ -264,6 +264,90 @@ async function moveItemInCategory(id, delta) {
   render();
   await persistItems();
 }
+
+// ---------- 長押しドラッグで並び替え ----------
+var dragState = null;
+
+function initDragHandle(handle) {
+  var id = handle.getAttribute("data-id");
+  var pressTimer = null;
+  var startClientY = 0;
+
+  function clearPress() {
+    if (pressTimer) { clearTimeout(pressTimer); pressTimer = null; }
+  }
+  handle.addEventListener("pointerdown", function (e) {
+    startClientY = e.clientY;
+    pressTimer = setTimeout(function () {
+      beginDrag(id, e.clientY);
+    }, 280);
+  });
+  handle.addEventListener("pointermove", function (e) {
+    if (pressTimer && Math.abs(e.clientY - startClientY) > 8) clearPress();
+    if (dragState && dragState.id === id) updateDrag(e.clientY);
+  });
+  ["pointerup", "pointercancel", "pointerleave"].forEach(function (evName) {
+    handle.addEventListener(evName, function () {
+      clearPress();
+      if (dragState && dragState.id === id) finishDrag();
+    });
+  });
+}
+
+function beginDrag(id, clientY) {
+  var row = document.querySelector('.item-manage-row[data-id="' + id + '"]');
+  if (!row) return;
+  dragState = { id: id, row: row, startClientY: clientY };
+  row.classList.add("dragging");
+  row.style.transform = "translateY(0px)";
+  if (navigator.vibrate) navigator.vibrate(8);
+}
+
+function updateDrag(clientY) {
+  if (!dragState) return;
+  var dy = clientY - dragState.startClientY;
+  dragState.row.style.transform = "translateY(" + dy + "px)";
+}
+
+function finishDrag() {
+  if (!dragState) return;
+  var row = dragState.row;
+  var id = dragState.id;
+  var rect = row.getBoundingClientRect();
+  var centerY = rect.top + rect.height / 2;
+  var container = row.parentElement;
+  var siblings = Array.prototype.slice.call(container.querySelectorAll(".item-manage-row"))
+    .filter(function (r) { return r !== row; });
+  var newPosInCat = siblings.length;
+  for (var i = 0; i < siblings.length; i++) {
+    var sRect = siblings[i].getBoundingClientRect();
+    var sMid = sRect.top + sRect.height / 2;
+    if (centerY < sMid) { newPosInCat = i; break; }
+  }
+  row.style.transform = "";
+  row.classList.remove("dragging");
+  dragState = null;
+  reorderItemToPosition(id, newPosInCat);
+}
+
+async function reorderItemToPosition(id, newPosInCat) {
+  var item = state.items.find(function (x) { return x.id === id; });
+  if (!item) return;
+  var curAbsIdx = state.items.indexOf(item);
+  state.items.splice(curAbsIdx, 1);
+  var indicesAfterRemove = [];
+  state.items.forEach(function (x, i) { if (x.category === item.category) indicesAfterRemove.push(i); });
+  var insertAbsIdx;
+  if (newPosInCat >= indicesAfterRemove.length) {
+    insertAbsIdx = indicesAfterRemove.length ? indicesAfterRemove[indicesAfterRemove.length - 1] + 1 : state.items.length;
+  } else {
+    insertAbsIdx = indicesAfterRemove[newPosInCat];
+  }
+  state.items.splice(insertAbsIdx, 0, item);
+  render();
+  await persistItems();
+}
+
 async function updateItem(id, text, categoryId) {
   var item = state.items.find(function (x) { return x.id === id; });
   if (!item) return;
@@ -403,11 +487,8 @@ function renderCategoryManager() {
     var pencilOrCheck = isEditing
       ? '<button type="button" class="item-manage-icon" data-action="manage-inline-save" data-id="' + it.id + '">✓</button>'
       : '<button type="button" class="item-manage-icon" data-action="manage-pencil" data-id="' + it.id + '">✏️</button>';
-    return '<div class="item-manage-row' + (it.done ? " done" : "") + '">' +
-      '<div class="item-manage-move">' +
-        '<button type="button" data-action="manage-move-up" data-id="' + it.id + '"' + (posInCat === 0 ? " disabled" : "") + '>▲</button>' +
-        '<button type="button" data-action="manage-move-down" data-id="' + it.id + '"' + (posInCat === items.length - 1 ? " disabled" : "") + '>▼</button>' +
-      '</div>' +
+    return '<div class="item-manage-row' + (it.done ? " done" : "") + '" data-id="' + it.id + '">' +
+      '<div class="drag-handle" data-id="' + it.id + '">☰</div>' +
       textOrInput +
       pencilOrCheck +
       '<button type="button" class="item-manage-icon" data-action="manage-delete" data-id="' + it.id + '">🗑</button>' +
@@ -714,11 +795,8 @@ function attachEvents() {
   app.querySelectorAll('[data-action="manage-delete"]').forEach(function (btn) {
     btn.addEventListener("click", function () { deleteItem(btn.getAttribute("data-id")); });
   });
-  app.querySelectorAll('[data-action="manage-move-up"]').forEach(function (btn) {
-    btn.addEventListener("click", function () { moveItemInCategory(btn.getAttribute("data-id"), -1); });
-  });
-  app.querySelectorAll('[data-action="manage-move-down"]').forEach(function (btn) {
-    btn.addEventListener("click", function () { moveItemInCategory(btn.getAttribute("data-id"), 1); });
+  app.querySelectorAll(".drag-handle").forEach(function (handle) {
+    initDragHandle(handle);
   });
   var manageForm = document.getElementById("manage-form");
   if (manageForm) {
