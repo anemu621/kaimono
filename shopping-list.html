@@ -686,11 +686,19 @@ function attachEvents() {
   }
 
   app.querySelectorAll('[data-action="close-modal"]').forEach(function (el) {
+    el.addEventListener("touchstart", function () {
+      state._overlayTouchTime = Date.now();
+    }, { passive: true });
     el.addEventListener("click", function (e) {
-      if (e.target.getAttribute("data-action") === "close-modal") {
-        state.showForm = false;
-        render();
+      if (e.target.getAttribute("data-action") !== "close-modal") return;
+      var activeEl = document.activeElement;
+      var isInput = activeEl && (activeEl.tagName === "INPUT" || activeEl.tagName === "TEXTAREA");
+      if (isInput) {
+        activeEl.blur();
+        return;
       }
+      state.showForm = false;
+      render();
     });
   });
   var modalInner = app.querySelector('[data-stop="1"]');
@@ -829,9 +837,10 @@ function syncModalToViewport() {
   var overlay = document.querySelector(".modal-overlay");
   if (!overlay || !window.visualViewport) return;
   var vv = window.visualViewport;
+  var offsetY = vv.offsetTop + (window.pageYOffset || 0);
   overlay.style.position = "fixed";
-  overlay.style.left = "0px";
-  overlay.style.top = vv.offsetTop + "px";
+  overlay.style.left = vv.offsetLeft + "px";
+  overlay.style.top = offsetY + "px";
   overlay.style.width = vv.width + "px";
   overlay.style.height = vv.height + "px";
 }
