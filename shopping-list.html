@@ -746,13 +746,13 @@ function attachEvents() {
 
   var form = document.getElementById("add-form");
   if (form) {
-    form.addEventListener("submit", function (e) {
+    form.addEventListener("submit", async function (e) {
       e.preventDefault();
       var input = document.getElementById("item-input");
       var text = input.value.trim();
       if (!text) return;
-      addItem(state.formCategory, text);
       state.showForm = false;
+      await addItem(state.formCategory, text);
     });
   }
 
@@ -846,12 +846,12 @@ function attachEvents() {
   });
   var manageForm = document.getElementById("manage-form");
   if (manageForm) {
-    manageForm.addEventListener("submit", function (e) {
+    manageForm.addEventListener("submit", async function (e) {
       e.preventDefault();
       var input = document.getElementById("manage-add-input");
       var text = input.value.trim();
       if (!text) return;
-      addItem(state.managingCategoryId, text);
+      await addItem(state.managingCategoryId, text);
       input.value = "";
       input.focus();
     });
