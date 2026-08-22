@@ -592,8 +592,14 @@ function renderApp() {
 }
 
 function render() {
+  var prevFocusId = document.activeElement && document.activeElement.id;
+  var prevFocusTag = document.activeElement && document.activeElement.tagName;
   document.getElementById("app").innerHTML = renderApp();
   attachEvents();
+  if (prevFocusId && (prevFocusTag === "INPUT" || prevFocusTag === "TEXTAREA")) {
+    var el = document.getElementById(prevFocusId);
+    if (el) el.focus();
+  }
 }
 
 function attachEvents() {
