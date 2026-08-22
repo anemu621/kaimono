@@ -232,7 +232,11 @@ function showError(detail) {
 }
 function flashSaved() {
   state.savedFlash = true;
-  render();
+  var activeEl = document.activeElement;
+  var inputFocused = activeEl && (activeEl.tagName === "INPUT" || activeEl.tagName === "TEXTAREA");
+  if (!inputFocused) {
+    render();
+  }
   setTimeout(function () {
     state.savedFlash = false;
     var activeEl = document.activeElement;
@@ -863,12 +867,8 @@ function syncModalToViewport() {
   var overlay = document.querySelector(".modal-overlay");
   if (!overlay || !window.visualViewport) return;
   var vv = window.visualViewport;
-  var offsetY = vv.offsetTop + (window.pageYOffset || 0);
-  overlay.style.position = "fixed";
-  overlay.style.left = vv.offsetLeft + "px";
-  overlay.style.top = offsetY + "px";
-  overlay.style.width = vv.width + "px";
-  overlay.style.height = vv.height + "px";
+  var keyboardHeight = Math.max(0, window.innerHeight - vv.height);
+  overlay.style.paddingBottom = keyboardHeight + "px";
 }
 if (window.visualViewport) {
   window.visualViewport.addEventListener("resize", syncModalToViewport);
