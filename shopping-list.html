@@ -218,12 +218,32 @@ function persistItems() {
 function showError(detail) {
   state.error = "保存に失敗しました" + (detail ? "（" + detail + "）" : "") + "。もう一度お試しください。";
   render();
-  setTimeout(function () { state.error = null; render(); }, 6000);
+  setTimeout(function () {
+    state.error = null;
+    var activeEl = document.activeElement;
+    var inputFocused = activeEl && (activeEl.tagName === "INPUT" || activeEl.tagName === "TEXTAREA");
+    if (inputFocused) {
+      var banner = document.querySelector(".error-banner");
+      if (banner) banner.remove();
+    } else {
+      render();
+    }
+  }, 6000);
 }
 function flashSaved() {
   state.savedFlash = true;
   render();
-  setTimeout(function () { state.savedFlash = false; render(); }, 1200);
+  setTimeout(function () {
+    state.savedFlash = false;
+    var activeEl = document.activeElement;
+    var inputFocused = activeEl && (activeEl.tagName === "INPUT" || activeEl.tagName === "TEXTAREA");
+    if (inputFocused) {
+      var banner = document.querySelector(".saved-banner");
+      if (banner) banner.remove();
+    } else {
+      render();
+    }
+  }, 1200);
 }
 
 async function addItem(categoryId, text) {
