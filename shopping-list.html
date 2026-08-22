@@ -680,8 +680,10 @@ function attachEvents() {
       state.showForm = true;
       render();
       syncModalToViewport();
-      var input = document.getElementById("item-input");
-      if (input) input.focus();
+      setTimeout(function () {
+        var input = document.getElementById("item-input");
+        if (input) input.focus();
+      }, 50);
     });
   }
 
@@ -700,8 +702,10 @@ function attachEvents() {
     btn.addEventListener("click", function () {
       state.formCategory = btn.getAttribute("data-cat");
       render();
-      var input = document.getElementById("item-input");
-      if (input) input.focus();
+      setTimeout(function () {
+        var input = document.getElementById("item-input");
+        if (input) input.focus();
+      }, 50);
     });
   });
 
@@ -1528,8 +1532,10 @@ function attachEvents() {
       state.showForm = true;
       render();
       syncModalToViewport();
-      var input = document.getElementById("item-input");
-      if (input) input.focus();
+      setTimeout(function () {
+        var input = document.getElementById("item-input");
+        if (input) input.focus();
+      }, 50);
     });
   }
 
@@ -1548,8 +1554,10 @@ function attachEvents() {
     btn.addEventListener("click", function () {
       state.formCategory = btn.getAttribute("data-cat");
       render();
-      var input = document.getElementById("item-input");
-      if (input) input.focus();
+      setTimeout(function () {
+        var input = document.getElementById("item-input");
+        if (input) input.focus();
+      }, 50);
     });
   });
 
