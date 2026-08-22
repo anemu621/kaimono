@@ -708,6 +708,7 @@ function attachEvents() {
   if (fab) {
     fab.addEventListener("click", function () {
       state.showForm = true;
+      state._formOpenedAt = Date.now();
       render();
       syncModalToViewport();
       var input = document.getElementById("item-input");
@@ -721,6 +722,7 @@ function attachEvents() {
     }, { passive: true });
     el.addEventListener("click", function (e) {
       if (e.target.getAttribute("data-action") !== "close-modal") return;
+      if (state._formOpenedAt && Date.now() - state._formOpenedAt < 350) return;
       var activeEl = document.activeElement;
       var isInput = activeEl && (activeEl.tagName === "INPUT" || activeEl.tagName === "TEXTAREA");
       if (isInput) {
