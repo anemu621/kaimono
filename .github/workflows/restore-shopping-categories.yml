@@ -1,0 +1,39 @@
+name: Restore shopping categories only
+
+on:
+  push:
+
+jobs:
+  repair:
+    if: ${{ !contains(github.event.head_commit.message, 'Restore shopping categories only') }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Restore shopping categories only
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import re
+          p = Path('shopping-list.html')
+          s = p.read_text(encoding='utf-8')
+          old = re.compile(r'var DEFAULT_CATEGORIES = \[.*?\];', re.S)
+          new = '''var DEFAULT_CATEGORIES = [
+  { id: "sandy", name: "サンディ", color: "#E8A93A" },
+  { id: "konomiya", name: "コノミヤ", color: "#E76F6F" },
+  { id: "sundrug", name: "サンドラッグ", color: "#5CAD6E" },
+  { id: "friendmart", name: "フレンドマート", color: "#5B9BD5" },
+  { id: "100yen", name: "100均", color: "#D98BC0" },
+  { id: "other", name: "その他", color: "#9AA0A6" }
+];'''
+          s2, n = old.subn(new, s, count=1)
+          if n != 1:
+              raise SystemExit('DEFAULT_CATEGORIES block not found; abort')
+          p.write_text(s2, encoding='utf-8')
+          PY
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add shopping-list.html
+          git commit -m 'Restore shopping categories only'
+          git push
