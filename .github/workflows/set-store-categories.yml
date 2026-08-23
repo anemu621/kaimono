@@ -1,0 +1,62 @@
+name: Restore shopping store categories
+
+on:
+  push:
+    paths:
+      - '.github/workflows/set-store-categories.yml'
+
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Replace only shopping-list default categories
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p = Path('shopping-list.html')
+          s = p.read_text(encoding='utf-8')
+          old = '''var DEFAULT_CATEGORIES = [
+  { id: "daily",  name: "日用品",   color: "#E8A93A" },
+  { id: "meat",   name: "肉",       color: "#E76F6F" },
+  { id: "veggie", name: "野菜",     color: "#5CAD6E" },
+  { id: "fish",   name: "魚",       color: "#5B9BD5" },
+  { id: "snack",  name: "おかし",   color: "#D98BC0" },
+  { id: "frozen", name: "冷凍食品", color: "#8B7FD4" },
+  { id: "season", name: "調味料",   color: "#C58B4E" },
+  { id: "other",  name: "その他",   color: "#9AA0A6" }
+];'''
+          new = '''var DEFAULT_CATEGORIES = [
+  { id: "sandy",    name: "サンディ",       color: "#E8A93A" },
+  { id: "konomiya", name: "コノミヤ",       color: "#E76F6F" },
+  { id: "sundrug",  name: "サンドラッグ",   color: "#5CAD6E" },
+  { id: "friendmart", name: "フレンドマート", color: "#5B9BD5" },
+  { id: "100yen",   name: "100均",          color: "#D98BC0" },
+  { id: "other",    name: "その他",         color: "#8B7FD4" }
+];'''
+          if old not in s:
+              raise SystemExit('expected category block not found; stopping without changing anything')
+          s = s.replace(old, new, 1)
+          old_init = '''    state.categories = await loadJSON("kaimono-shopping-categories-v2", DEFAULT_CATEGORIES);
+    if (!state.categories || state.categories.length === 0) state.categories = DEFAULT_CATEGORIES;
+    state.formCategory = state.categories[0].id;'''
+          new_init = '''    state.categories = await loadJSON("kaimono-shopping-categories-v2", DEFAULT_CATEGORIES);
+    var oldCategoryIds = ["daily", "meat", "veggie", "fish", "snack", "frozen", "season", "other"];
+    var hasOldCategories = state.categories && state.categories.length && state.categories.some(function (c) { return oldCategoryIds.indexOf(c.id) !== -1; });
+    if (!state.categories || state.categories.length === 0 || hasOldCategories) {
+      state.categories = DEFAULT_CATEGORIES.slice();
+      await persistCategories();
+    }
+    state.formCategory = state.categories[0].id;'''
+          if old_init not in s:
+              raise SystemExit('expected init block not found; stopping without changing anything')
+          s = s.replace(old_init, new_init, 1)
+          p.write_text(s, encoding='utf-8')
+          PY
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add shopping-list.html
+          git commit -m 'Restore shopping list store categories'
+          git push
