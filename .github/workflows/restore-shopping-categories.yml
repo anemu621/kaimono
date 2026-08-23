@@ -38,4 +38,4 @@ jobs:
           git commit -m 'Restore shopping categories only'
           git push
 
-# trigger restoration
+# trigger restoration now
