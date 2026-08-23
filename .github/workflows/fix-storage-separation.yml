@@ -33,3 +33,5 @@ jobs:
           git add shopping-list.html
           git commit -m 'Separate shopping list storage from other app data'
           git push
+
+# trigger storage separation
