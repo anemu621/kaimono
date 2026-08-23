@@ -1,0 +1,59 @@
+name: Apply green theme
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Apply minimal green-theme changes
+        shell: python
+        run: |
+          from pathlib import Path
+          import re
+
+          p = Path('shopping-list.html')
+          s = p.read_text(encoding='utf-8')
+
+          if '#9A82C7' not in s:
+              print('Green theme already applied; nothing to do.')
+              raise SystemExit(0)
+
+          replacements = {
+              '#9A82C7': '#5CAD6E',
+              '#6E56A0': '#3F8052',
+              '#F6F2EA': '#F1F8F4',
+              '#EDE6D8': '#C9E3D2',
+              '#E4DCEF': '#D7EBDD',
+              '#F8F5FC': '#F2F8F4',
+              'rgba(154,130,199,0.5)': 'rgba(92,173,110,0.28)',
+          }
+          for old, new in replacements.items():
+              s = s.replace(old, new)
+
+          icon = 'var ICON_DATA_URI = "data:image/svg+xml;charset=UTF-8,%3Csvg xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22 viewBox%3D%220 0 100 100%22%3E%3Crect width%3D%22100%22 height%3D%22100%22 rx%3D%2220%22 fill%3D%22%235CAD6E%22%2F%3E%3Cpath d%3D%22M23 28h9l7 34h38l8-25H36%22 fill%3D%22none%22 stroke%3D%22white%22 stroke-width%3D%226%22 stroke-linecap%3D%22round%22 stroke-linejoin%3D%22round%22%2F%3E%3Ccircle cx%3D%2243%22 cy%3D%2274%22 r%3D%225%22 fill%3D%22white%22%2F%3E%3Ccircle cx%3D%2270%22 cy%3D%2274%22 r%3D%225%22 fill%3D%22white%22%2F%3E%3C%2Fsvg%3E";'
+          s, n = re.subn(r'var ICON_DATA_URI = ".*?";', icon, s, count=1)
+          if n != 1:
+              raise SystemExit('ICON_DATA_URI line not found')
+
+          p.write_text(s, encoding='utf-8')
+
+      - name: Commit changes and remove this one-shot workflow
+        shell: bash
+        run: |
+          if git diff --quiet -- shopping-list.html; then
+            exit 0
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add shopping-list.html
+          git rm .github/workflows/apply-green-theme.yml
+          git commit -m 'style: change shopping list theme to green'
+          git push
