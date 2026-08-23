@@ -34,3 +34,5 @@ jobs:
           git add apple-touch-icon-v5.png shopping-list.html
           git commit -m 'fix: home screen icon png'
           git push
+
+# trigger
