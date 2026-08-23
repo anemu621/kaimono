@@ -166,7 +166,7 @@ var state = {
 };
 
 function persistCategories() {
-  return saveJSON("shopping-categories", state.categories).then(function (res) {
+  return saveJSON("kaimono-shopping-categories-v2", state.categories).then(function (res) {
     if (!res.ok) showError(res.error);
     return res.ok;
   });
@@ -207,7 +207,7 @@ async function finishEditingCats() {
 }
 
 function persistItems() {
-  return saveJSON("shopping-items", state.items).then(function (res) {
+  return saveJSON("kaimono-shopping-items-v2", state.items).then(function (res) {
     if (!res.ok) showError(res.error);
     return res.ok;
   });
@@ -829,8 +829,8 @@ if (window.visualViewport) {
 render();
 (async function init() {
   try {
-    state.items = await loadJSON("shopping-items", []);
-    state.categories = await loadJSON("shopping-categories", DEFAULT_CATEGORIES);
+    state.items = await loadJSON("kaimono-shopping-items-v2", []);
+    state.categories = await loadJSON("kaimono-shopping-categories-v2", DEFAULT_CATEGORIES);
     if (!state.categories || state.categories.length === 0) state.categories = DEFAULT_CATEGORIES;
     state.formCategory = state.categories[0].id;
   } catch (e) {
