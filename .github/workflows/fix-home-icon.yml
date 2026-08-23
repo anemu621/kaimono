@@ -27,3 +27,5 @@ jobs:
           git add shopping-list.html apple-touch-icon-v5.png
           git commit -m 'Fix iPhone home screen icon cache'
           git push
+
+# trigger second push
