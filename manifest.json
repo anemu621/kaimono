@@ -1,0 +1,16 @@
+{
+  "name": "買い物リスト",
+  "short_name": "買い物リスト",
+  "start_url": "./shopping-list.html",
+  "display": "standalone",
+  "background_color": "#F1F8F4",
+  "theme_color": "#5CAD6E",
+  "icons": [
+    {
+      "src": "./apple-touch-icon-v5.svg",
+      "sizes": "180x180",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}
