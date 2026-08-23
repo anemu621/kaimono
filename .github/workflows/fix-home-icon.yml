@@ -1,0 +1,38 @@
+name: Fix home screen icon
+on:
+  push:
+    branches: [main]
+permissions:
+  contents: write
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Update shopping-list.html
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p = Path('shopping-list.html')
+          s = p.read_text(encoding='utf-8')
+          marker = '<title>買い物リスト</title>\n'
+          link = '<title>買い物リスト</title>\n<link rel="apple-touch-icon" href="apple-touch-icon-v4.svg" />\n'
+          if link not in s:
+              if marker not in s:
+                  raise SystemExit('title marker not found')
+              s = s.replace(marker, link, 1)
+          old = '''(function setupIcons() {\n  var appleIcon = document.createElement("link");\n  appleIcon.rel = "apple-touch-icon";\n  appleIcon.href = ICON_DATA_URI;\n  document.head.appendChild(appleIcon);\n  var favicon = document.createElement("link");\n'''
+          new = '''(function setupIcons() {\n  var favicon = document.createElement("link");\n'''
+          if old in s:
+              s = s.replace(old, new, 1)
+          p.write_text(s, encoding='utf-8')
+          PY
+          if git diff --quiet -- shopping-list.html; then
+            echo 'No changes needed'
+            exit 0
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add shopping-list.html
+          git commit -m 'Fix iOS home screen icon'
+          git push
