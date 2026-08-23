@@ -37,3 +37,5 @@ jobs:
           git add shopping-list.html
           git commit -m 'Restore shopping categories only'
           git push
+
+# trigger restoration
