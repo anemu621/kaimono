@@ -18,13 +18,8 @@ jobs:
           import re
           p = Path('shopping-list.html')
           s = p.read_text(encoding='utf-8')
-
-          # Isolate ONLY the shopping-list storage keys.
           s = s.replace('"shopping-items"', '"kaimono-shopping-items-v2"')
           s = s.replace('"shopping-categories"', '"kaimono-shopping-categories-v2"')
-
-          # Keep the existing category object structure/colors/IDs, but restore
-          # the shopping-list category names to the six names the user specified.
           m = re.search(r'(var\s+DEFAULT_CATEGORIES\s*=\s*\[)(.*?)(\]\s*;)', s, re.S)
           if not m:
               raise SystemExit('DEFAULT_CATEGORIES block not found; abort without changing HTML')
@@ -33,7 +28,7 @@ jobs:
           pat = re.compile(r'(["\']name["\']\s*:\s*["\'])(.*?)(["\'])')
           i = 0
           def repl(mm):
-              nonlocal i
+              global i
               if i >= len(names):
                   return mm.group(0)
               out = mm.group(1) + names[i] + mm.group(3)
@@ -45,9 +40,10 @@ jobs:
           s = s[:m.start(2)] + new_block + s[m.end(2):]
           p.write_text(s, encoding='utf-8')
           PY
-
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add shopping-list.html
           git commit -m 'Repair shopping list storage and categories'
           git push
+
+# trigger a fresh run
