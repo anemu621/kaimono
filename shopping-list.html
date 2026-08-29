@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, interactive-widget=resizes-content" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
 <meta name="apple-mobile-web-app-title" content="買い物リスト" />
@@ -13,7 +13,8 @@
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Noto+Sans+JP:wght@400;500;700;900&display=swap" rel="stylesheet">
 <style>
   :root { --purple:#5CAD6E; --purple-dark:#3F8052; --bg:#F1F8F4; }
-  * { box-sizing: border-box; touch-action: manipulation; }
+  * { box-sizing: border-box; }
+  button, .item-check, .drag-handle, .cat-chip, .cat-dot-btn { touch-action: manipulation; }
   html, body { margin: 0; padding: 0; }
   body {
     -webkit-tap-highlight-color: transparent;
