@@ -706,8 +706,7 @@ function attachEvents() {
       var text = input.value.trim();
       if (!text) return;
       addItem(state.formCategory, text);
-      var freshInput = document.getElementById("item-input");
-      if (freshInput) { freshInput.value = ""; freshInput.focus(); }
+      state.showForm = false;
     });
   }
 
@@ -796,39 +795,15 @@ function attachEvents() {
       var text = input.value.trim();
       if (!text) return;
       addItem(state.managingCategoryId, text);
-      var freshInput2 = document.getElementById("manage-add-input");
-      if (freshInput2) { freshInput2.value = ""; freshInput2.focus(); }
     });
   }
 }
 
 // ---------- keep modal visible above keyboard (iOS visualViewport fix) ----------
 function syncModalToViewport() {
-  var overlay = document.querySelector(".modal-overlay");
-  if (!overlay || !window.visualViewport) return;
-  var vv = window.visualViewport;
-  overlay.style.position = "fixed";
-  overlay.style.left = "0px";
-  overlay.style.top = vv.offsetTop + "px";
-  overlay.style.width = vv.width + "px";
-  overlay.style.height = vv.height + "px";
-  var modal = overlay.querySelector(".modal");
-  if (modal) modal.style.maxHeight = Math.round(vv.height * 0.9) + "px";
+  // ブラウザ側のinteractive-widget=resizes-contentに任せるため、
+  // JSでの強制的な位置・高さ調整はやめた(キーボードとの相性問題を避けるため)
 }
-if (window.visualViewport) {
-  window.visualViewport.addEventListener("resize", syncModalToViewport);
-  window.visualViewport.addEventListener("scroll", syncModalToViewport);
-}
-
-// 入力欄をタップしたら、キーボードが出た後にその欄が見える位置まで自動スクロール
-document.addEventListener("focusin", function (e) {
-  var el = e.target;
-  if (!el.closest || !el.closest(".modal")) return;
-  if (el.tagName !== "INPUT" && el.tagName !== "TEXTAREA") return;
-  setTimeout(function () {
-    el.scrollIntoView({ block: "center", behavior: "smooth" });
-  }, 350);
-});
 
 // ---------- init ----------
 render();
