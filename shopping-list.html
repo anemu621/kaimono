@@ -710,7 +710,8 @@ function attachEvents() {
       var text = input.value.trim();
       if (!text) return;
       addItem(state.formCategory, text);
-      state.showForm = false;
+      var freshInput = document.getElementById("item-input");
+      if (freshInput) { freshInput.value = ""; freshInput.focus(); }
     });
   }
 
@@ -803,8 +804,8 @@ function attachEvents() {
       var text = input.value.trim();
       if (!text) return;
       addItem(state.managingCategoryId, text);
-      input.value = "";
-      input.focus();
+      var freshInput2 = document.getElementById("manage-add-input");
+      if (freshInput2) { freshInput2.value = ""; freshInput2.focus(); }
     });
   }
 }
@@ -819,11 +820,23 @@ function syncModalToViewport() {
   overlay.style.top = vv.offsetTop + "px";
   overlay.style.width = vv.width + "px";
   overlay.style.height = vv.height + "px";
+  var modal = overlay.querySelector(".modal");
+  if (modal) modal.style.maxHeight = Math.round(vv.height * 0.9) + "px";
 }
 if (window.visualViewport) {
   window.visualViewport.addEventListener("resize", syncModalToViewport);
   window.visualViewport.addEventListener("scroll", syncModalToViewport);
 }
+
+// 入力欄をタップしたら、キーボードが出た後にその欄が見える位置まで自動スクロール
+document.addEventListener("focusin", function (e) {
+  var el = e.target;
+  if (!el.closest || !el.closest(".modal")) return;
+  if (el.tagName !== "INPUT" && el.tagName !== "TEXTAREA") return;
+  setTimeout(function () {
+    el.scrollIntoView({ block: "center", behavior: "smooth" });
+  }, 350);
+});
 
 // ---------- init ----------
 render();
