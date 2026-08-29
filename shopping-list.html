@@ -532,10 +532,6 @@ function renderEditItemModal() {
         '<div class="cat-chip-row">' + chips + '</div>' +
         '<label class="field-label">買うもの</label>' +
         '<input class="field-input" id="edit-item-input" value="' + escapeHtml(item.text) + '" autocomplete="off" />' +
-        '<div class="item-move-row">' +
-          '<button type="button" class="item-move-btn" data-action="edit-move-up"' + (posInCat === 0 ? " disabled" : "") + '>▲ 上へ</button>' +
-          '<button type="button" class="item-move-btn" data-action="edit-move-down"' + (posInCat === indices.length - 1 ? " disabled" : "") + '>▼ 下へ</button>' +
-        '</div>' +
         '<button type="submit" class="submit-btn">保存する</button>' +
         '<button type="button" class="delete-item-btn" data-action="edit-delete-item">この項目を削除</button>' +
       '</form>' +
@@ -730,10 +726,6 @@ function attachEvents() {
       render();
     });
   });
-  var editMoveUpBtn = app.querySelector('[data-action="edit-move-up"]');
-  if (editMoveUpBtn) editMoveUpBtn.addEventListener("click", function () { moveItemInCategory(state.editingItemId, -1); });
-  var editMoveDownBtn = app.querySelector('[data-action="edit-move-down"]');
-  if (editMoveDownBtn) editMoveDownBtn.addEventListener("click", function () { moveItemInCategory(state.editingItemId, 1); });
   var editDeleteBtn = app.querySelector('[data-action="edit-delete-item"]');
   if (editDeleteBtn) {
     editDeleteBtn.addEventListener("click", function () {
