@@ -672,9 +672,6 @@ function attachEvents() {
     fab.addEventListener("click", function () {
       state.showForm = true;
       render();
-      syncModalToViewport();
-      var input = document.getElementById("item-input");
-      if (input) input.focus();
     });
   }
 
@@ -693,8 +690,6 @@ function attachEvents() {
     btn.addEventListener("click", function () {
       state.formCategory = btn.getAttribute("data-cat");
       render();
-      var input = document.getElementById("item-input");
-      if (input) input.focus();
     });
   });
 
