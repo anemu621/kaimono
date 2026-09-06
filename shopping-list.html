@@ -758,9 +758,28 @@ addItem(state.managingCategoryId, text);
 }
 // ---------- keep modal visible above keyboard (iOS visualViewport fix) ----------
 function syncModalToViewport() {
-// ブラウザ側のinteractive-widget=resizes-contentに任せるため、
-// JSでの強制的な位置・高さ調整はやめた(キーボードとの相性問題を避けるため)
+var vv = window.visualViewport;
+if (!vv) return;
+document.querySelectorAll(".modal-overlay").forEach(function (overlay) {
+overlay.style.height = vv.height + "px";
+overlay.style.top = vv.offsetTop + "px";
+var modal = overlay.querySelector(".modal");
+if (modal) modal.style.maxHeight = Math.round(vv.height * 0.85) + "px";
+});
 }
+if (window.visualViewport) {
+window.visualViewport.addEventListener("resize", syncModalToViewport);
+window.visualViewport.addEventListener("scroll", syncModalToViewport);
+}
+document.addEventListener("focusin", function (e) {
+var el = e.target;
+if (!el.closest || !el.closest(".modal")) return;
+if (el.tagName !== "INPUT" && el.tagName !== "TEXTAREA") return;
+setTimeout(function () {
+syncModalToViewport();
+el.scrollIntoView({ block: "center", behavior: "smooth" });
+}, 300);
+});
 // ---------- init ----------
 render();
 (async function init() {
