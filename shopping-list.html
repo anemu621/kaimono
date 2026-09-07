@@ -340,7 +340,7 @@ var ok = await persistItems();
 if (ok) flashSaved();
 }
 function exportData() {
-var payload = { exportedAt: new Date().toISOString(), items: state.items };
+var payload = { exportedAt: new Date().toISOString(), items: state.items, categories: state.categories };
 var blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
 var url = URL.createObjectURL(blob);
 var a = document.createElement("a");
@@ -359,8 +359,12 @@ var map = {};
 state.items.forEach(function (it) { map[it.id] = it; });
 (data.items || []).forEach(function (it) { map[it.id] = it; });
 state.items = Object.values(map).sort(function (a, b) { return (b.createdAt || 0) - (a.createdAt || 0); });
+if (data.categories && data.categories.length > 0) {
+state.categories = data.categories;
+}
 render();
 await persistItems();
+await persistCategories();
 flashSaved();
 } catch (e) {
 state.error = "読み込みに失敗しました。ファイルを確認してください。";
