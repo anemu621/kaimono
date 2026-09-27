@@ -487,22 +487,6 @@ var chips = state.categories.map(function (c) {
 var active = state.formCategory === c.id;
 return '<button type="button" class="cat-chip' + (active ? " active" : "") + '" style="border-color:' + c.color + ';' + (active ? "background:" + c.color + ";" : "color:" + c.color + ";") + '" data-action="pick-cat" data-cat="' + c.id + '">' + escapeHtml(c.name) + '</button>';
 }).join("");
-var catItems = state.items.filter(function (it) { return it.category === state.formCategory; });
-var itemRows = catItems.map(function (it) {
-var isEditing = state.managerInlineEditId === it.id;
-var textOrInput = isEditing
-? '<input class="item-manage-text-input" id="manage-inline-input" value="' + escapeHtml(it.text) + '" data-id="' + it.id + '" />'
-: '<div class="item-manage-text">' + escapeHtml(it.text) + '</div>';
-var pencilOrCheck = isEditing
-? '<button type="button" class="item-manage-icon" data-action="manage-inline-save" data-id="' + it.id + '">✓</button>'
-: '<button type="button" class="item-manage-icon" data-action="manage-pencil" data-id="' + it.id + '">✏️</button>';
-return '<div class="item-manage-row' + (it.done ? " done" : "") + '" data-id="' + it.id + '">' +
-'<div class="drag-handle" data-id="' + it.id + '">☰</div>' +
-textOrInput +
-pencilOrCheck +
-'<button type="button" class="item-manage-icon" data-action="manage-delete" data-id="' + it.id + '">🗑</button>' +
-'</div>';
-}).join("");
 return (
 '<div class="modal-overlay" data-action="close-modal">' +
 '<form class="modal" id="add-form" data-stop="1">' +
@@ -515,7 +499,6 @@ return (
 '<label class="field-label">買うもの</label>' +
 '<input class="field-input" id="item-input" name="item-input-' + uid() + '" placeholder="例：たまご" autocomplete="off" value="' + escapeHtml(state.newItemText || "") + '" />' +
 '<button type="submit" class="submit-btn"' + (state.saving ? ' disabled' : '') + '>' + (state.saving ? '追加中…' : '追加する') + '</button>' +
-(itemRows ? '<div class="cat-editor" style="margin-top:16px;">' + itemRows + '</div>' : '') +
 '</form>' +
 '</div>'
 );
