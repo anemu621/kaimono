@@ -403,7 +403,6 @@ return (
 '<div class="drag-handle" data-id="' + it.id + '">☰</div>' +
 '<button class="item-check' + (it.done ? " checked" : "") + '" style="border-color:' + cat.color + ';' + (it.done ? "background:" + cat.color + ";" : "") + '" data-action="toggle" data-id="' + it.id + '">' + (it.done ? "✓" : "") + '</button>' +
 '<div class="item-text">' + escapeHtml(it.text) + '</div>' +
-'<button class="item-delete" data-action="delete" data-id="' + it.id + '" aria-label="削除">🗑</button>' +
 '</div>'
 );
 }
