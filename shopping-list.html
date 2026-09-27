@@ -721,27 +721,17 @@ app.querySelectorAll(".drag-handle").forEach(function (handle) {
 initDragHandle(handle);
 });
 }
-// ---------- keep modal visible above keyboard (iOS visualViewport fix) ----------
-function syncModalToViewport() {
-var vv = window.visualViewport;
-if (!vv) return;
-document.querySelectorAll(".modal-overlay").forEach(function (overlay) {
-overlay.style.height = vv.height + "px";
-overlay.style.top = vv.offsetTop + "px";
-var modal = overlay.querySelector(".modal");
-if (modal) modal.style.maxHeight = Math.round(vv.height * 0.85) + "px";
-});
-}
-if (window.visualViewport) {
-window.visualViewport.addEventListener("resize", syncModalToViewport);
-window.visualViewport.addEventListener("scroll", syncModalToViewport);
-}
+// ---------- keep modal visible above keyboard ----------
+// interactive-widget=resizes-content (viewport meta tag) already shrinks the
+// layout viewport when the keyboard opens, so fixed-position elements resize
+// natively. A JS-driven visualViewport resize on top of that caused a double
+// jump; only gently scroll the focused field into view.
+function syncModalToViewport() {}
 document.addEventListener("focusin", function (e) {
 var el = e.target;
 if (!el.closest || !el.closest(".modal")) return;
 if (el.tagName !== "INPUT" && el.tagName !== "TEXTAREA") return;
 setTimeout(function () {
-syncModalToViewport();
 el.scrollIntoView({ block: "center", behavior: "smooth" });
 }, 300);
 });
