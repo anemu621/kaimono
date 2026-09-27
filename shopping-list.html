@@ -43,7 +43,8 @@ font-family: 'Noto Sans JP', sans-serif;
 .cat-card { background: #fff; border: 1px solid #C9E3D2; border-radius: 12px; padding: 12px; cursor: pointer; }
 .cat-head { display: flex; align-items: center; gap: 6px; margin-bottom: 8px; font-size: 13px; font-weight: 700; }
 .cat-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
-.item-row { display: flex; align-items: center; gap: 8px; padding: 5px 0; cursor: pointer; }
+.item-row { display: flex; align-items: center; gap: 8px; padding: 5px 0; cursor: pointer; transition: box-shadow 0.15s ease; }
+.item-row.dragging { box-shadow: 0 6px 16px rgba(58,50,66,0.25); background: #FBF9FF; z-index: 10; position: relative; border-radius: 8px; }
 .item-move-row { display: flex; gap: 10px; justify-content: center; margin-top: 4px; }
 .item-move-btn { flex: 1; padding: 10px 0; border-radius: 8px; border: 1px solid #D7EBDD; background: #F2F8F4; color: var(--purple-dark); font-size: 13px; font-weight: 700; cursor: pointer; font-family: inherit; }
 .item-move-btn:disabled { opacity: 0.35; }
@@ -262,7 +263,9 @@ var startClientY = 0;
 function clearPress() {
 if (pressTimer) { clearTimeout(pressTimer); pressTimer = null; }
 }
+handle.addEventListener("click", function (e) { e.stopPropagation(); });
 handle.addEventListener("pointerdown", function (e) {
+e.stopPropagation();
 startClientY = e.clientY;
 pressTimer = setTimeout(function () {
 beginDrag(id, e.clientY);
@@ -280,7 +283,7 @@ if (dragState && dragState.id === id) finishDrag();
 });
 }
 function beginDrag(id, clientY) {
-var row = document.querySelector('.item-manage-row[data-id="' + id + '"]');
+var row = document.querySelector('.item-row[data-id="' + id + '"]');
 if (!row) return;
 dragState = { id: id, row: row, startClientY: clientY };
 row.classList.add("dragging");
@@ -299,7 +302,7 @@ var id = dragState.id;
 var rect = row.getBoundingClientRect();
 var centerY = rect.top + rect.height / 2;
 var container = row.parentElement;
-var siblings = Array.prototype.slice.call(container.querySelectorAll(".item-manage-row"))
+var siblings = Array.prototype.slice.call(container.querySelectorAll(".item-row"))
 .filter(function (r) { return r !== row; });
 var newPosInCat = siblings.length;
 for (var i = 0; i < siblings.length; i++) {
@@ -397,6 +400,7 @@ function renderItemRow(it) {
 var cat = catById(it.category);
 return (
 '<div class="item-row' + (it.done ? " done" : "") + '" data-action="edit-item" data-id="' + it.id + '">' +
+'<div class="drag-handle" data-id="' + it.id + '">☰</div>' +
 '<button class="item-check' + (it.done ? " checked" : "") + '" style="border-color:' + cat.color + ';' + (it.done ? "background:" + cat.color + ";" : "") + '" data-action="toggle" data-id="' + it.id + '">' + (it.done ? "✓" : "") + '</button>' +
 '<div class="item-text">' + escapeHtml(it.text) + '</div>' +
 '<button class="item-delete" data-action="delete" data-id="' + it.id + '" aria-label="削除">🗑</button>' +
