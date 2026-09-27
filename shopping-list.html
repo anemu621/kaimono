@@ -670,7 +670,8 @@ var input = document.getElementById("item-input");
 var text = input.value.trim();
 if (!text) return;
 addItem(state.formCategory, text);
-state.showForm = false;
+var newInput = document.getElementById("item-input");
+if (newInput) newInput.focus();
 });
 }
 app.querySelectorAll('[data-action="close-edit-modal"]').forEach(function (el) {
