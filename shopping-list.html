@@ -39,7 +39,8 @@ font-family: 'Noto Sans JP', sans-serif;
 .list { flex: 1; overflow-y: auto; padding: 16px 14px 100px; }
 .empty-state { text-align: center; color: #3A3242; padding: 60px 20px; display: flex; flex-direction: column; align-items: center; }
 .loading-state { text-align: center; color: #8A7F99; padding: 80px 20px; font-size: 13px; }
-.cat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; align-items: start; }
+.cat-grid { display: flex; gap: 10px; align-items: flex-start; }
+.cat-col { display: flex; flex-direction: column; gap: 10px; flex: 1 1 0; min-width: 0; }
 .cat-card { background: #fff; border: 1px solid #C9E3D2; border-radius: 12px; padding: 12px; cursor: pointer; }
 .cat-head { display: flex; align-items: center; gap: 6px; margin-bottom: 8px; font-size: 13px; font-weight: 700; }
 .cat-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
@@ -420,20 +421,31 @@ return (
 );
 }
 var hasDone = state.items.some(function (it) { return it.done; });
-var html = '<div class="list"><div class="cat-grid">';
+// Build cards into two columns, each new card going into whichever column
+// currently has fewer items, so a short category (few items) doesn't get
+// stretched down to match a tall one next to it (CSS grid rows would force
+// that; independent flex columns don't).
+var colHtml = ["", ""];
+var colCount = [0, 0];
 state.categories.forEach(function (cat) {
 var items = state.items.filter(function (it) { return it.category === cat.id; });
 if (items.length === 0) return;
-html += '<div class="cat-card" data-action="manage-cat" data-cat="' + cat.id + '">' +
+var col = colCount[0] <= colCount[1] ? 0 : 1;
+colHtml[col] += '<div class="cat-card" data-action="manage-cat" data-cat="' + cat.id + '">' +
 '<div class="cat-head"><span class="cat-dot" style="background:' + cat.color + ';"></span>' + escapeHtml(cat.name) + '</div>';
-items.forEach(function (it) { html += renderItemRow(it); });
-html += '</div>';
+items.forEach(function (it) { colHtml[col] += renderItemRow(it); });
+colHtml[col] += '</div>';
+colCount[col] += items.length + 1;
 });
+var html = '<div class="list"><div class="cat-grid">' +
+'<div class="cat-col">' + colHtml[0] + '</div>' +
+'<div class="cat-col">' + colHtml[1] + '</div>' +
+'</div>';
 html += '<button class="clear-done-btn" data-action="edit-cats">✎ カテゴリを編集</button>';
 if (hasDone) {
 html += '<button class="clear-done-btn" data-action="clear-done">購入済みをまとめて削除</button>';
 }
-html += '</div></div>';
+html += '</div>';
 return html;
 }
 function renderCategoryEditor() {
